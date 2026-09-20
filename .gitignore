@@ -1,0 +1,24 @@
+# macOS
+.DS_Store
+
+# LaTeX: manter os PDFs finais e ignorar arquivos intermediários
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.nav
+*.out
+*.run.xml
+*.snm
+*.synctex.gz
+*.toc
+*.vrb
+*.xdv
+
+# Arquivos temporários
+*.bak
+*.swp
+*~

@@ -1,0 +1,167 @@
+\documentclass[aspectratio=169,xcolor=table]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[portuguese]{babel}
+\usepackage{tabularx,booktabs}
+\usetheme{DCC}
+\setbeamertemplate{itemize items}[circle]
+\setlength{\parskip}{0.5em}
+\graphicspath{{imgs/}}
+% Mantém o tema original. Margem protege o conteúdo da faixa lateral.
+\setbeamersize{text margin left=1cm,text margin right=0.6cm}
+\author[João Victor, Lucas Rapozo, Antoniel Magalhães]{%
+\textbf{João Victor}\\[0.12cm]
+\textbf{Lucas Rapozo}\\[0.12cm]
+\textbf{Antoniel Magalhães}}
+\title{Família Bode\\Modelos de linguagem para o português brasileiro}
+\institute{Universidade Federal da Bahia --- Instituto de Computação}
+\date{}
+\newcommand{\fonte}[1]{\par\vspace{0.12cm}{\scriptsize\color{gray}Fonte: Paiola et al. (2025), #1.}}
+\begin{document}
+
+% 1 | 0:00--0:20 | João Victor
+\begin{frame}[plain,noframenumbering]
+\titlepage
+\end{frame}
+
+% 2 | 0:20--1:15 | João Victor
+\begin{frame}{Problema e objetivo do artigo}
+\begin{itemize}\setlength{\itemsep}{0.65em}
+\item Modelos com treinamento concentrado em inglês podem interpretar mal expressões e contextos do português brasileiro.
+\item O artigo investiga a adaptação de modelos de pesos abertos por \textbf{ajuste fino} com instruções em português.
+\item \textbf{Pergunta central da síntese:} em quais modelos e tarefas essa adaptação melhora o desempenho?
+\end{itemize}
+\fonte{seção 1}
+\end{frame}
+
+% 3 | 1:15--2:20 | João Victor
+\begin{frame}{A proposta: uma família de modelos adaptados}
+\begin{itemize}\setlength{\itemsep}{0.65em}
+\item \textbf{35 variantes catalogadas}, incluindo versões com adaptadores incorporados e formatos de distribuição.
+\item Bases: LLaMA, Gemma, Phi, Mistral, InternLM, Qwen e Zephyr.
+\item Diferentes portes e estratégias de ajuste permitem comparar desempenho e escolhas de adaptação.
+\item Contribuição: disponibilização dos modelos e avaliação comparativa em português brasileiro.
+\end{itemize}
+\fonte{seções 5 e 5.8; Tabela 1}
+\end{frame}
+
+% 4 | 2:20--3:20 | João Victor
+\begin{frame}{Dados e estratégias de ajuste}
+\begin{columns}[T,onlytextwidth]
+\begin{column}{0.49\textwidth}
+\textbf{Dados de instrução}
+\begin{itemize}\setlength{\itemsep}{0.45em}
+\item \textbf{Alpaca:} 52 mil exemplos traduzidos para português.
+\item \textbf{UltraAlpaca:} combina instruções, conversas, código e matemática de diferentes conjuntos.
+\end{itemize}
+\end{column}
+\begin{column}{0.47\textwidth}
+\textbf{Como adaptar}
+\begin{itemize}\setlength{\itemsep}{0.45em}
+\item \textbf{Full:} atualiza todos os pesos.
+\item \textbf{LoRA:} treina adaptadores, mantendo os pesos-base fixos.
+\item \textbf{QLoRA:} usa uma base quantizada com adaptadores, reduzindo a memória necessária.
+\end{itemize}
+\end{column}
+\end{columns}
+\fonte{seções 3.1, 4 e 6.1}
+\end{frame}
+
+% 5 | 3:20--4:25 | Lucas Rapozo
+\begin{frame}{Avaliação: nove tarefas em português}
+\begin{tabularx}{\textwidth}{@{}lX@{}}
+\toprule
+\textbf{Conjunto de tarefas} & \textbf{O que avalia}\\\midrule
+ENEM, BLUEX e OAB & Questões de provas; acurácia, com 3 exemplos no prompt.\\[0.3em]
+ASSIN2 RTE/STS; FAQUAD NLI & Inferência e similaridade; F1 macro ou correlação de Pearson, com 15 exemplos.\\[0.3em]
+HateBR; PT Hate Speech; tweetSentBR & Ofensividade, discurso de ódio e sentimento; F1 macro, com 25 exemplos.\\\bottomrule
+\end{tabularx}\par
+\vspace{0.15cm}
+\textbf{Comparação principal:} modelo adaptado versus sua respectiva base, no Open PT-LLM Leaderboard.
+\fonte{seção 6.2; a média agregada combina métricas diferentes}
+\end{frame}
+
+% 6 | 4:25--5:50 | Lucas Rapozo
+\begin{frame}{Resultados: ganhos em parte dos modelos}
+\textbf{Recorte da Tabela 2 --- pontuação média reportada}
+\begin{tabularx}{\textwidth}{@{}Xrrr@{}}
+\toprule
+\textbf{Base $\rightarrow$ variante Bode} & \textbf{Base} & \textbf{Bode} & \textbf{$\Delta$}\\\midrule
+Gemma-7B-it $\rightarrow$ gembode-7b-it & 49,61 & 60,60 & +10,99\\[0.25em]
+Phi-2 $\rightarrow$ Phi-Bode & 36,52 & 43,59 & +7,07\\[0.25em]
+Mistral-7B $\rightarrow$ QLoRA/UltraAlpaca & 61,13 & 65,35 & +4,22\\[0.25em]
+InternLM2-chat-20B $\rightarrow$ ChatBode & 70,59 & 71,68 & +1,09\\\bottomrule
+\end{tabularx}\par
+\vspace{0.15cm}
+\textbf{ChatBode-20B} tem a maior média entre os Bode apresentados, mas o maior ganho deste recorte é do Gemma-7B-it.
+\fonte{Tabela 2; diferenças em pontos do escore agregado, não em porcentagem de ganho}
+\end{frame}
+
+% 7 | 5:50--7:00 | Lucas Rapozo
+\begin{frame}{O ajuste fino também pode piorar o resultado}
+\begin{tabularx}{\textwidth}{@{}Xrrr@{}}
+\toprule
+\textbf{Base $\rightarrow$ variante Bode} & \textbf{Base} & \textbf{Bode} & \textbf{$\Delta$}\\\midrule
+LLaMA-3.1-8B-Instruct $\rightarrow$ Full & 71,24 & 69,78 & $-1,46$\\[0.3em]
+Phi-3-mini $\rightarrow$ UltraAlpaca & 66,41 & 60,69 & $-5,72$\\[0.3em]
+Gemma-2B $\rightarrow$ QLoRA/UltraAlpaca & 44,07 & 31,19 & $-12,88$\\\bottomrule
+\end{tabularx}\par
+\vspace{0.2cm}
+\begin{itemize}\setlength{\itemsep}{0.45em}
+\item O benefício depende da base, dos dados, do ajuste e da tarefa.
+\item Os autores sugerem sobreajuste ou perda de conhecimento como explicações possíveis; não demonstram uma causa única.
+\end{itemize}
+\fonte{Tabela 2; seções 7.2 e 7.3}
+\end{frame}
+
+% 8 | 7:00--7:55 | Antoniel Magalhães
+\begin{frame}{Um exemplo de interpretação cultural}
+\begin{block}{Expressão analisada no artigo}
+\centering\Large ``vergonha alheia''
+\end{block}
+\begin{itemize}\setlength{\itemsep}{0.6em}
+\item No exemplo, \textbf{InternLM2} classifica o sentimento como neutro.
+\item \textbf{ChatBode} identifica o sentimento negativo, coerente com o constrangimento expresso.
+\item O caso ilustra uma melhora de interpretação; exemplos selecionados não comprovam domínio cultural geral.
+\end{itemize}
+\fonte{seção 7.5}
+\end{frame}
+
+% 9 | 7:55--9:00 | Antoniel Magalhães
+\begin{frame}{Limitações e leitura crítica}
+\begin{itemize}\setlength{\itemsep}{0.55em}
+\item \textbf{Média heterogênea:} acurácia, F1 macro e correlação de Pearson medem aspectos diferentes.
+\item \textbf{Reprodutibilidade parcial:} nem todos os registros de treinamento foram preservados; há hiperparâmetros representativos.
+\item \textbf{Vieses dos dados:} tradução e geração sintética podem carregar referências culturais e vieses das fontes.
+\item \textbf{Alcance da evidência:} a análise cultural adicional usa apenas sete questões selecionadas do ENEM.
+\end{itemize}
+\fonte{seções 6.1, 6.2, 7.5.1 e 7.7; síntese crítica da equipe}
+\end{frame}
+
+% 10 | 9:00--10:00 | Antoniel Magalhães
+\begin{frame}{Síntese do artigo}
+\begin{itemize}\setlength{\itemsep}{0.8em}
+\item A família Bode oferece modelos adaptados e uma comparação ampla de alternativas para português brasileiro.
+\item Há ganhos relevantes, mas \textbf{o ajuste fino não garante melhoria}: bases fortes também podem perder desempenho.
+\item Nossa leitura: a escolha deve considerar \textbf{a tarefa de interesse e a comparação com a base}, além da média geral.
+\end{itemize}
+\vspace{0.25cm}
+\textbf{Direção futura apontada pelos autores:} dados de instrução de qualidade produzidos originalmente em português.
+\fonte{seções 7 e 8}
+\end{frame}
+
+% Apoio para consulta; fora dos 10 minutos de fala.
+\appendix
+\begin{frame}[noframenumbering]{Artigo de referência}
+\textbf{The Bode Family of Large Language Models: Investigating the Frontiers of LLMs in Brazilian Portuguese}
+
+Pedro Henrique Paiola; Gabriel Lino Garcia; João Vitor Mariano Correia; João Renato Ribeiro Manesco; Ana Lara Alves Garcia; João Paulo Papa.
+
+\textit{Journal of the Brazilian Computer Society}, v. 31, n. 1, 2025.
+
+\href{https://doi.org/10.5753/jbcs.2025.5812}{DOI: 10.5753/jbcs.2025.5812}
+
+\small Todos os resultados apresentados são os reportados no artigo de 2025. Os nomes abreviados nas tabelas identificam os pares da Tabela 2.
+\end{frame}
+\end{document}
