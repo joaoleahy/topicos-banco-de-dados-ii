@@ -1,0 +1,25 @@
+[project]
+name = "pratica-1-stil"
+version = "0.1.0"
+description = "PRÁTICA 1 — Extração de Dados dos artigos do STIL 2017"
+requires-python = ">=3.11"
+dependencies = [
+    "requests",
+    "beautifulsoup4",
+    "firecrawl-anydoc",
+    "pymupdf4llm",
+    "spacy>=3.8,<3.9",
+    "langdetect",
+    "wordcloud",
+    "matplotlib",
+    "ipykernel",
+    "pt-core-news-sm",
+    "en-core-web-sm",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+pt-core-news-sm = { url = "https://github.com/explosion/spacy-models/releases/download/pt_core_news_sm-3.8.0/pt_core_news_sm-3.8.0-py3-none-any.whl" }
+en-core-web-sm = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl" }

@@ -1,6 +1,17 @@
 # macOS
 .DS_Store
 
+# Corpus: tudo é gerado pela pipeline (ml/ + notebook), não versionar
+pratica-1-stil/corpus/
+
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# uv
+pratica-1-stil/.venv/
+
 # LaTeX: manter os PDFs finais e ignorar arquivos intermediários
 *.aux
 *.bbl
