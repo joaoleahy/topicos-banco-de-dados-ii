@@ -61,22 +61,23 @@ def processar(nlp, texto: str) -> tuple[list[str], list[str], list[str]]:
     return tokens, pos, lemas
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--force", action="store_true")
-    args = ap.parse_args()
-
+def run(force: bool = False) -> int:
     metas = json.loads(META_FILE.read_text())
     por_ordem = {f"article_{r['ordem']:02d}": r for r in metas}
+    arquivos = sorted(JSON_DIR.glob("article_*.json"))
+
+    if not force and arquivos and all(json.loads(p.read_text())["artigo_tokenizado"] for p in arquivos):
+        print("todos os artigos ja processados", file=sys.stderr)
+        return 0
 
     nlp = {lang: spacy.load(modelo) for lang, modelo in MODELOS.items()}
 
-    for n, arq in enumerate(sorted(JSON_DIR.glob("article_*.json")), 1):
+    for n, arq in enumerate(arquivos, 1):
         dados = json.loads(arq.read_text())
         idioma = detectar_idioma(dados["artigo_completo"])
         dados["idioma"] = idioma
         por_ordem[arq.stem]["idioma"] = idioma
-        if dados["artigo_tokenizado"] and not args.force:
+        if dados["artigo_tokenizado"] and not force:
             print(f"[{n}] {arq.stem} ja processado", file=sys.stderr)
             continue
         tokens, pos, lemas = processar(nlp[idioma], dados["artigo_completo"])
@@ -89,6 +90,13 @@ def main() -> int:
 
     print("idioma:", dict(Counter(d["idioma"] for d in por_ordem.values())), file=sys.stderr)
     return 0
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--force", action="store_true")
+    args = ap.parse_args()
+    return run(force=args.force)
 
 
 if __name__ == "__main__":

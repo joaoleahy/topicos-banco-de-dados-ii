@@ -97,17 +97,13 @@ def limpar(txt: str, titulo: str) -> str:
     return re.sub(r"\n{2,}", "\n\n", "\n".join(linhas)).strip() + "\n"
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--force", action="store_true", help="re-limpar existentes")
-    args = ap.parse_args()
-
+def run(force: bool = False) -> int:
     LIMPO_DIR.mkdir(parents=True, exist_ok=True)
     titulos = {f"article_{r['ordem']:02d}": r["titulo"] for r in json.loads(META_FILE.read_text())}
 
     for n, arq in enumerate(sorted(TEXT_DIR.glob("article_*.md")), 1):
         destino = LIMPO_DIR / arq.name
-        if destino.exists() and not args.force:
+        if destino.exists() and not force:
             print(f"[{n}] {arq.name} ja existia", file=sys.stderr)
             continue
         limpo = limpar(arq.read_text(), titulos[arq.stem])
@@ -115,6 +111,13 @@ def main() -> int:
         print(f"[{n}] {arq.name} -> limpo/{arq.name} ({len(limpo)} chars)", file=sys.stderr)
 
     return 0
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--force", action="store_true", help="re-limpar existentes")
+    args = ap.parse_args()
+    return run(force=args.force)
 
 
 if __name__ == "__main__":

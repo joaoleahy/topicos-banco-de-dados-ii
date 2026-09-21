@@ -122,17 +122,13 @@ def separar(md: str, meta: dict) -> dict:
     }
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--force", action="store_true")
-    args = ap.parse_args()
-
+def run(force: bool = False) -> int:
     JSON_DIR.mkdir(parents=True, exist_ok=True)
     metas = {f"article_{r['ordem']:02d}": r for r in json.loads(META_FILE.read_text())}
 
     for n, arq in enumerate(sorted(LIMPO_DIR.glob("article_*.md")), 1):
         destino = JSON_DIR / f"{arq.stem}.json"
-        if destino.exists() and not args.force:
+        if destino.exists() and not force:
             print(f"[{n}] {arq.name} ja existia", file=sys.stderr)
             continue
         dados = separar(arq.read_text(), metas[arq.stem])
@@ -143,6 +139,13 @@ def main() -> int:
             file=sys.stderr,
         )
     return 0
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--force", action="store_true")
+    args = ap.parse_args()
+    return run(force=args.force)
 
 
 if __name__ == "__main__":

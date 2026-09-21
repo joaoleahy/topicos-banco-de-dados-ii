@@ -96,7 +96,11 @@ def top10(contador: Counter) -> list[list]:
     return [[palavra, n] for palavra, n in contador.most_common(10)]
 
 
-def main() -> int:
+def run(force: bool = False) -> int:
+    if SAIDA.exists() and not force:
+        print(f"ja existia: {SAIDA.relative_to(ROOT)}", file=sys.stderr)
+        return 0
+
     artigos = carregar()
     print(f"artigos: {len(artigos)}", file=sys.stderr)
 
@@ -155,6 +159,10 @@ def main() -> int:
     print(f"tokens={c['tokens']} types={c['types']} sentencas={c['sentencas']} lemas={c['lemas_unicos']}")
     print("saida:", SAIDA.relative_to(ROOT))
     return 0
+
+
+def main() -> int:
+    return run()
 
 
 if __name__ == "__main__":

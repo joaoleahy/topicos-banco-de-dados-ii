@@ -70,6 +70,34 @@ def first_page(soup: BeautifulSoup) -> int:
     return int(valor) if valor.isdigit() else 9999
 
 
+def pdf_ok(caminho: Path) -> bool:
+    return caminho.exists() and caminho.stat().st_size > 0
+
+
+def corpus_pronto() -> bool:
+    if not META_FILE.exists():
+        return False
+    registros = json.loads(META_FILE.read_text())
+    return bool(registros) and all(pdf_ok(ROOT / r["storage_key"]) for r in registros)
+
+
+def baixar_pdfs(registros: list[dict], force: bool = False) -> None:
+    for reg in registros:
+        destino = ROOT / reg["storage_key"]
+        if pdf_ok(destino) and not force:
+            print(f"  {reg['storage_key']} ja existia", file=sys.stderr)
+            continue
+        if not reg.get("pdf_url"):
+            print(f"  {reg['storage_key']} SEM pdf_url", file=sys.stderr)
+            continue
+        try:
+            destino.write_bytes(get(reg["pdf_url"]).content)
+            print(f"  {reg['storage_key']} baixado", file=sys.stderr)
+        except Exception as e:  # noqa: BLE001
+            print(f"  erro no pdf: {e}", file=sys.stderr)
+        time.sleep(DELAY)
+
+
 def parse_article(artigo_id: str) -> dict:
     url = f"{BASE}/article/view/{artigo_id}"
     soup = BeautifulSoup(get(url).text, "html.parser")
@@ -100,13 +128,21 @@ def parse_article(artigo_id: str) -> dict:
     }
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--force", action="store_true", help="re-baixar PDFs existentes")
-    args = ap.parse_args()
-
+def run(force: bool = False) -> int:
+    """Baixa metadados + PDFs. Se o corpus já estiver completo, não mexe na rede."""
     FILES_DIR.mkdir(parents=True, exist_ok=True)
     DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+    if not force and corpus_pronto():
+        n = len(json.loads(META_FILE.read_text()))
+        print(f"{n} artigos ja em {META_FILE.relative_to(ROOT)}", file=sys.stderr)
+        return 0
+    if META_FILE.exists() and not force:
+        registros = json.loads(META_FILE.read_text())
+        faltando = [r for r in registros if not pdf_ok(ROOT / r["storage_key"])]
+        print(f"metadados ok; faltam {len(faltando)} pdfs", file=sys.stderr)
+        baixar_pdfs(registros, force=False)
+        return 0
 
     ids = article_ids(get(ISSUE_URL).text)
     print(f"artigos encontrados: {len(ids)}", file=sys.stderr)
@@ -126,27 +162,21 @@ def main() -> int:
     for i, reg in enumerate(registros, 1):
         reg["ordem"] = i
         reg["storage_key"] = f"corpus/files/article_{i:02d}.pdf"
+        reg.pop("_primeira_pagina", None)
 
     # 3) baixa os PDFs numerados
-    for reg in registros:
-        destino = ROOT / reg["storage_key"]
-        reg.pop("_primeira_pagina", None)
-        if destino.exists() and destino.stat().st_size > 0 and not args.force:
-            print(f"  {reg['storage_key']} ja existia", file=sys.stderr)
-            continue
-        if not reg["pdf_url"]:
-            print(f"  {reg['storage_key']} SEM pdf_url", file=sys.stderr)
-            continue
-        try:
-            destino.write_bytes(get(reg["pdf_url"]).content)
-            print(f"  {reg['storage_key']} baixado", file=sys.stderr)
-        except Exception as e:  # noqa: BLE001
-            print(f"  erro no pdf: {e}", file=sys.stderr)
-        time.sleep(DELAY)
+    baixar_pdfs(registros, force=force)
 
     META_FILE.write_text(json.dumps(registros, ensure_ascii=False, indent=2) + "\n")
     print(f"\n{len(registros)} artigos -> {META_FILE.relative_to(ROOT)}", file=sys.stderr)
     return 0
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--force", action="store_true", help="re-baixar PDFs existentes")
+    args = ap.parse_args()
+    return run(force=args.force)
 
 
 if __name__ == "__main__":
