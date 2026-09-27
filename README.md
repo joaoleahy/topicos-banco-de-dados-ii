@@ -11,10 +11,11 @@ Apresentações da equipe:
 | Nº | Tema | Material |
 |---|---|---|
 | 01 | Família Bode: modelos de linguagem para o português brasileiro | [Pasta](apresentacoes/01-familia-bode/) · [PDF](apresentacoes/01-familia-bode/main.pdf) · [Roteiro](apresentacoes/01-familia-bode/roteiro.md) |
+| 02 | From Tokens to Words: On the Inner Lexicon of LLMs | [Pasta](apresentacoes/teorica-2-tokens-to-words/) · [PDF](apresentacoes/teorica-2-tokens-to-words/main.pdf) · [Roteiro](apresentacoes/teorica-2-tokens-to-words/roteiro.md) |
 
 ## Organização
 
-Cada apresentação possui uma pasta independente em `apresentacoes/`, com prefixo numérico e nome do tema, por exemplo `02-nome-do-tema/`. A pasta contém o código LaTeX, o tema Beamer, as imagens necessárias, o PDF compilado e o roteiro quando disponível.
+Cada apresentação possui uma pasta independente em `apresentacoes/`, com identificação da apresentação e nome do tema, como `01-familia-bode/` e `teorica-2-tokens-to-words/`. A pasta contém o código LaTeX, o tema Beamer, as imagens necessárias, o PDF compilado e o roteiro quando disponível.
 
 ## Compilação
 
