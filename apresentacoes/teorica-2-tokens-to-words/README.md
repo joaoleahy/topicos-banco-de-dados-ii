@@ -1,6 +1,6 @@
 # Teórica 2 — From Tokens to Words: On the Inner Lexicon of LLMs
 
-Síntese do artigo de Guy Kaplan, Matanel Oren, Yuval Reif e Roy Schwartz, publicado na ICLR 2025. Base: PDF fornecido, arXiv:2410.05864v4 (3 de março de 2025).
+Conclusão do artigo de Guy Kaplan, Matanel Oren, Yuval Reif e Roy Schwartz, publicado na ICLR 2025. Base: PDF fornecido, arXiv:2410.05864v4 (3 de março de 2025).
 
 Equipe: João Victor, Lucas Rapozo e Antoniel Magalhães.
 

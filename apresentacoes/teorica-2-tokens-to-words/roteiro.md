@@ -15,7 +15,7 @@ Os tempos são metas para ensaio, incluindo transições. As falas desenvolvem o
 | 7 | 5:50–7:00 | Lucas Rapozo | Intervenção nas FFNs |
 | 8 | 7:00–7:55 | Antoniel Magalhães | Expansão do vocabulário |
 | 9 | 7:55–9:00 | Antoniel Magalhães | Resultados práticos |
-| 10 | 9:00–10:00 | Antoniel Magalhães | Síntese e limites |
+| 10 | 9:00–10:00 | Antoniel Magalhães | Conclusão e limites |
 | 11 | Consulta | Equipe | Referência |
 
 ## 1. Abertura
@@ -108,7 +108,7 @@ Essas medidas não devem ser confundidas: menos tokens não significa automatica
 
 Âncoras: qualidade próxima, pequenas quedas → sequência menor → domínio e idioma → tokens não são milissegundos.
 
-## 10. Síntese e limites
+## 10. Conclusão e limites
 
 “O artigo reúne evidências de que modelos reconstroem representações de palavras no último token, principalmente nas camadas iniciais e intermediárias. A atenção agrega informações dos fragmentos, e as FFNs contribuem para formar a representação completa.
 
@@ -142,6 +142,6 @@ A expansão foi avaliada no Llama2-7B, em três conjuntos. A contribuição é l
 - Slide 7: seção 5.1. 85% → 18% é a ablação de palavras com sufixos, não a experiência separada sobre capitais de países.
 - Slide 8: seção 6, Figura 6.
 - Slide 9: Tabela 1, linha geral (All words), valores multiplicados por 100; Apêndice H, Tabela 5, redução de tokens na codificação.
-- Slide 10: síntese das evidências e leitura crítica da equipe.
+- Slide 10: conclusão das evidências e leitura crítica da equipe.
 
 Referência: Kaplan, G.; Oren, M.; Reif, Y.; Schwartz, R. From Tokens to Words: On the Inner Lexicon of LLMs. ICLR 2025. PDF fornecido, arXiv:2410.05864v4, 3 de março de 2025. https://arxiv.org/abs/2410.05864v4
