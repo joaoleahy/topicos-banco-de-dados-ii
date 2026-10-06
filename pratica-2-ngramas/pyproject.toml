@@ -1,0 +1,12 @@
+[project]
+name = "pratica-2-ngramas"
+version = "0.1.0"
+description = "PRÁTICA 2 — Geração probabilística de textos com n-gramas (corpus STIL 2017)"
+requires-python = ">=3.11"
+dependencies = [
+    "ipykernel",
+    "matplotlib>=3.11.2",
+]
+
+[tool.uv]
+package = false
