@@ -5,7 +5,7 @@
 """Etapa 1 — Baixar.
 
 Pega a issue do STIL 2017 no SOL/SBC, extrai os metadados de cada artigo
-(titulo, autores+afiliacao, data, resumo, urls) e baixa os PDFs.
+(titulo, autores+afiliacao+orcid, data, resumo, urls) e baixa os PDFs.
 
 Os arquivos saem numerados na ordem dos anais: files/article_01.pdf ... article_NN.pdf.
 O `artigo_id` do SOL fica guardado no JSON pra rastrear a origem.
@@ -103,10 +103,16 @@ def parse_article(artigo_id: str) -> dict:
     soup = BeautifulSoup(get(url).text, "html.parser")
 
     autores = []
-    nomes, afiliacoes = meta(soup, "citation_author"), meta(soup, "citation_author_institution")
+    nomes = meta(soup, "citation_author")
+    afiliacoes = meta(soup, "citation_author_institution")
+    orcids = meta(soup, "citation_author_orcid")
     for i, nome in enumerate(nomes):
         autores.append(
-            {"nome": nome, "afiliacao": afiliacoes[i] if i < len(afiliacoes) else ""}
+            {
+                "nome": nome,
+                "afiliacao": afiliacoes[i] if i < len(afiliacoes) else "",
+                "orcid": orcids[i] if i < len(orcids) else "",
+            }
         )
 
     pdf_url = (meta(soup, "citation_pdf_url") or [""])[0]

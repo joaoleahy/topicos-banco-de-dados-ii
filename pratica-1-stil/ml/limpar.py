@@ -4,12 +4,14 @@
 # ///
 """Etapa 3 — Limpar.
 
-Tira o ruido da extracao, mas PRESERVA os headings (#, ##) porque a Etapa 4
-usa as secoes pra achar abstract / corpo / referencias.
+Tira o ruido da extracao, preservando toda a acentuacao original das palavras
+e os headings (#, ##), porque a Etapa 4 usa as secoes pra achar abstract /
+corpo / referencias.
 
 Regras:
-  1. conserta mojibake dos acentos (ex.: "Formac¸˜ao" -> "Formacao" com acento),
-     inclusive marcador separado por espaco ("opini ˜ ao") ou depois da vogal ("e´ o")
+  1. conserta mojibake dos acentos (ex.: "Formac¸˜ao" -> "Formação"),
+     inclusive marcador separado por espaco ("opini ˜ ao", "dist ˆ ancia",
+     "m ´ etricas", "log ´ ıstica") ou depois da vogal ("e´ o")
      e junta a hifenizacao de quebra de linha ("inte- resse")
   2. remove zero-width, NBSP, tags HTML (<u>, <sup>, ...) e enfase do markdown (*)
   3. remove o cabecalho repetido ("Proceedings of Symposium...") e o running head
@@ -49,6 +51,14 @@ _ACENTOS = {
 # sequencias que o mapa generico nao cobre (letra sem acento + marcador)
 _CASOS = {"´ı": "í", "´I": "Í", "ˆı": "î", "ˆI": "Î", "c¸": "ç", "C¸": "Ç"}
 
+# Palavras curtas autonomas que nao devem ser coladas a palavra seguinte
+# quando houver um marcador de acento solto entre elas (ex.: "de ˜ agrupamento")
+_PALAVRAS_SOLTAS = {
+    "a", "o", "e", "de", "da", "do", "das", "dos", "em", "na", "no", "nas", "nos",
+    "por", "para", "com", "sem", "sob", "que", "se", "ou", "um", "uma", "uns", "umas",
+    "os", "as", "ao", "aos", "pelo", "pela", "pelos", "pelas",
+}
+
 
 def _acentos_map() -> dict[str, str]:
     m = dict(_CASOS)
@@ -78,40 +88,59 @@ def montar_lexico(textos: list[str]) -> dict[str, str]:
     contagem = Counter(w.lower() for t in textos for w in re.findall(r"\w{2,}", conserta_acentos(t)))
     lexico: dict[str, str] = {}
     for w, _ in contagem.most_common():
-        if sem_acento(w) != w:  # só formas acentuadas: a versão sem acento é justamente o ruído
+        if sem_acento(w) != w:  # só formas acentuadas
             lexico.setdefault(sem_acento(w), w)
     return lexico
 
 
-def _junta_marcador(m: re.Match, lexico: dict[str, str]) -> str:
+def _junta_marcador(m: re.Match, lexico: dict[str, str] | None = None) -> str:
     esq, marcador, dir_ = m[1], m[2], m[3]
-    candidato = esq + _MOJIBAKE.get(marcador + dir_[0], dir_[0]) + dir_[1:]
+
+    # Caso especial: verbo "é" separado ("geralmente ´ e" -> "geralmente é")
+    if dir_ == "e" and marcador == "´":
+        return f"{esq} é"
+
+    letra_acentuada = _MOJIBAKE.get(marcador + dir_[0])
+    if not letra_acentuada:
+        # Marcador antes de consoante ("geologico ´ deve-se"): marcador solto
+        return f"{esq} {dir_}"
+
+    candidato = esq + letra_acentuada + dir_[1:]
     candidato = re.sub(r"[áâà]o(s?)$", r"ão\1", candidato)
-    forma = lexico.get(sem_acento(candidato))
-    if forma:
-        return esq[0] + forma[1:] if esq[0].isupper() else forma
-    if dir_ == "e":
-        return f"{esq} é"  # "geralmente ´ e" -> "geralmente é"
-    return f"{esq} {dir_}"
+
+    # 1. Se existir no léxico do corpus, usa a grafia canônica acentuada
+    if lexico:
+        forma = lexico.get(sem_acento(candidato))
+        if forma:
+            return esq[0] + forma[1:] if esq[0].isupper() else forma
+
+    # 2. Se a parte esquerda for preposição/artigo solto e não estava no léxico
+    # (ex.: "de ˜ agrupamento"), não cola
+    if esq.lower() in _PALAVRAS_SOLTAS and sem_acento(candidato) not in {"nao", "sao", "vao", "dao", "tao", "mao", "maos", "pao", "paes", "cao", "caes"}:
+        return f"{esq} {dir_}"
+
+    # 3. Se o marcador for til (~), só cola em terminações nasais válidas (-ão, -ões, -ã, etc.)
+    if marcador == "˜" and not re.match(r"^(?:[aáâà]o|oes|oe|ae|a)s?$", dir_, flags=re.IGNORECASE):
+        return f"{esq} {dir_}"
+
+    # 4. Caso geral ("dist ˆ ancia" -> "distância", "m ´ etricas" -> "métricas", "log ´ ıstica" -> "logística"):
+    # preserva a palavra unida e acentuada!
+    return candidato
 
 
 def conserta_acentos(txt: str, lexico: dict[str, str] | None = None) -> str:
-    # "classificac¸ ˜ ao", "Computac¸ ´ ao": no sufixo -ção/-ções o til é certo,
-    # qualquer que seja o marcador (a fonte do PDF troca)
+    # "classificac¸ ˜ ao", "Computac¸ ´ ao": no sufixo -ção/-ções o til é certo
     txt = re.sub(
         rf"([cC])¸[ \t]*[{_MARCADORES}]?[ \t]*(ao|oes|oe)\b",
         lambda m: ("ç" if m[1] == "c" else "Ç") + _SUFIXO_C[m[2]],
         txt,
     )
-    # "An ´ alise", "Matem ˆ aticas": marcador com espaço dos dois lados. Só junta se a
-    # palavra resultante existe acentuada no próprio corpus; senão ("geologico ´ deve-se")
-    # o marcador é solto entre duas palavras e elas ficam separadas
-    if lexico:
-        txt = re.sub(
-            rf"(\w+)[ \t]+([{_MARCADORES}])[ \t]+(\w+)",
-            lambda m: _junta_marcador(m, lexico),
-            txt,
-        )
+    # "An ´ alise", "dist ˆ ancia", "m ´ etricas": marcador com espaço dos dois lados
+    txt = re.sub(
+        rf"(\w+)[ \t]+([{_MARCADORES}])[ \t]+(\w+)",
+        lambda m: _junta_marcador(m, lexico),
+        txt,
+    )
     # "subdivisao˜", "e´ o": marcador deslocado para depois da vogal
     txt = txt.replace("ao˜", "ão")
     txt = re.sub(
@@ -125,7 +154,7 @@ def conserta_acentos(txt: str, lexico: dict[str, str] | None = None) -> str:
     txt = txt.replace("çao", "ção")  # til perdido: "Computac¸ao" -> "Computação"
     txt = re.sub(r"[áâà]o(s?)\b", r"ão\1", txt)  # "n ´ ao" -> "náo" -> "não"
     txt = txt.translate(_GRAVE_ERRADO)  # "Geol ` ogicas" -> "Geològicas" -> "Geológicas"
-    return re.sub(r"[´ˆ˜¨`¸]", "", txt)  # marcadores soltos
+    return re.sub(r"[´ˆ˜¨`¸]", "", txt)  # remove apenas marcadores órfãos
 
 
 def junta_hifenizacao(txt: str) -> str:
@@ -134,7 +163,7 @@ def junta_hifenizacao(txt: str) -> str:
 
 
 def esqueleto(s: str) -> str:
-    """So letras/numeros minusculos, sem acento — pra comparar titulos."""
+    """So letras/numeros minusculos, sem acento —usado apenas para comparar cabeçalhos repetidos."""
     return re.sub(r"[^a-z0-9]", "", unicodedata.normalize("NFKD", s).lower())
 
 
@@ -151,7 +180,7 @@ def limpar(txt: str, titulo: str, lexico: dict[str, str] | None = None) -> str:
     alvo = esqueleto(titulo)
     linhas = []
     for linha in txt.splitlines():
-        if linha.lstrip().startswith("#"):  # heading = estrutura, preserva
+        if linha.lstrip().startswith("#"):  # heading = estrutura, preserva para a Etapa 4
             linhas.append(re.sub(r"[ \t]+", " ", linha).rstrip())
             continue
         s = esqueleto(linha)

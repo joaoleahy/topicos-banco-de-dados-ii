@@ -3,17 +3,18 @@
 # dependencies = [
 #   "spacy>=3.8,<3.9",
 #   "langdetect",
-#   "pt-core-news-sm @ https://github.com/explosion/spacy-models/releases/download/pt_core_news_sm-3.8.0/pt_core_news_sm-3.8.0-py3-none-any.whl",
-#   "en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl",
+#   "pt-core-news-lg @ https://github.com/explosion/spacy-models/releases/download/pt_core_news_lg-3.8.0/pt_core_news_lg-3.8.0-py3-none-any.whl",
+#   "en-core-web-lg @ https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.8.0/en_core_web_lg-3.8.0-py3-none-any.whl",
 # ]
 # ///
 """Etapa 5 — Processar.
 
 Para cada artigo: detecta o idioma (langdetect no corpo), tokeniza, marca POS
-e gera lemas com spaCy (modelo pt ou en), preenche artigo_tokenizado /
-pos_tagger / lema, e extrai keywords do titulo+resumo (o SOL/PDF nao trazem).
+e gera lemas com spaCy (modelos large: pt_core_news_lg ou en_core_web_lg),
+preenche artigo_tokenizado / pos_tagger / lema, e extrai keywords do
+titulo+resumo quando o PDF nao traz explicitamente.
 
-- Tokenizacao exclui espacos e pontuacao; stopwords ficam (regra da tarefa).
+- Tokenizacao exclui espacos, pontuacoes, simbolos e numerais; stopwords ficam (regra da tarefa).
 - pos_tagger no formato "TAG_token" (ex.: "NOUN_casa").
 - artigo_tokenizado/pos_tagger/lema tem o mesmo tamanho e ordem.
 - keywords: sintagmas nominais do titulo (prioridade) e do resumo.
@@ -40,9 +41,10 @@ ROOT = Path(__file__).resolve().parent.parent
 JSON_DIR = ROOT / "corpus" / "json"
 META_FILE = ROOT / "corpus" / "data" / "artigos.json"
 
-MODELOS = {"pt": "pt_core_news_sm", "en": "en_core_web_sm"}
+MODELOS = {"pt": "pt_core_news_lg", "en": "en_core_web_lg"}
 N_KEYWORDS = 6
 _POS_KW = {"ADJ", "NOUN", "PROPN"}
+_POS_IGNORAR = {"PUNCT", "SYM", "SPACE", "NUM"}
 _LIGA = {"de", "da", "do", "dos", "das", "of"}
 _GENERICOS = {
     "abordagem",
@@ -112,7 +114,7 @@ def _frases_nominais(doc) -> list[str]:
                     continue
                 break
             partes = [x.text for x in toks[start:i] if x.pos_ != "DET"]
-            frase = re.sub(r"\s+", " ", " ".join(partes)).strip(" .;,:")
+            frase = re.sub(r"\s+", " ", " ".join(partes)).strip(" .;,:“”\"")
             if len(frase) >= 3:
                 frases.append(frase)
         else:
@@ -165,11 +167,18 @@ def extrair_keywords(nlp: dict, titulo: str, resumo: str, k: int = N_KEYWORDS) -
     return escolhidas
 
 
+def eh_token_valido(t) -> bool:
+    """Filtra espacos, pontuacoes, simbolos e tokens sem letras."""
+    if t.is_space or t.is_punct or t.like_num or t.pos_ in _POS_IGNORAR:
+        return False
+    return any(c.isalpha() for c in t.text)
+
+
 def processar(nlp, texto: str) -> tuple[list[str], list[str], list[str]]:
     doc = nlp(texto)
     tokens, pos, lemas = [], [], []
     for t in doc:
-        if t.is_space or t.is_punct:
+        if not eh_token_valido(t):
             continue
         tokens.append(t.text)
         pos.append(f"{t.pos_}_{t.text}")

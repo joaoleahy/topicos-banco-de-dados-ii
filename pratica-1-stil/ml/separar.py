@@ -8,8 +8,11 @@ Le o markdown limpo de cada artigo e monta o JSON do template do professor,
 separando resumo / corpo / referencias. Nao processa nada de NLP ainda
 (artigo_tokenizado, pos_tagger, lema ficam vazios para a Etapa 5).
 
-Regras da tarefa: referencias e autores entram no JSON mas NAO sao processados.
-Entao `artigo_completo` = corpo (sem titulo, autores, resumo e referencias).
+Regras da tarefa:
+- Referencias (tanto a secao final quanto as citacoes inline nos paragrafos)
+  e autores NAO sao processados no corpo.
+- Remove headings (#) e linhas de tabela markdown (|) do corpo final.
+- Preserva a chave `orcid` em cada autor conforme o template.
 
 Saida: corpus/json/article_01.json ... article_NN.json
 
@@ -40,14 +43,11 @@ _ENTRADA_REF = re.compile(r"\s+[A-ZÀ-Ý][\w’'.-]+(?:\s+[A-ZÀ-Ý][\w’'.-]+)
 _SECTION = re.compile(r"^#+\s*\d")
 _ABS = re.compile(r"(?i)^\W*(resumo|abstract)\b")
 _KEYWORDS = re.compile(r"(?i)^\W*(palavras[- ]chave|keywords)\s*[:.]\s*(.+)$")
+_MARCADORES_MD = ("#", "|")
 
 
 def achar_referencias(linhas: list[str]) -> tuple[int, int | None, int | None] | None:
-    """Devolve (linha, corte_do_corpo, inicio_das_refs).
-
-    Heading sozinho -> corte_do_corpo=None (linha sai inteira).
-    Inline -> corte no inicio e refs depois da palavra.
-    """
+    """Devolve (linha, corte_do_corpo, inicio_das_refs)."""
     for i, ln in enumerate(linhas):
         if _REF_HEADING.match(ln.strip()):
             return i, None, None
@@ -81,6 +81,45 @@ def palavras_chave(linhas: list[str]) -> list[str]:
     return []
 
 
+def remover_citacoes_inline(texto: str) -> str:
+    """Remove citacoes bibliograficas ao longo dos paragrafos."""
+    # 1. Citacoes narrativas do tipo "Segundo Barbosa et al. (2016)" ou "Silva e Souza [2015]"
+    texto = re.sub(
+        r"\b[A-ZÀ-Ý][a-zà-úçA-ZÀ-Ý'-]+(?:\s+(?:e|and|&)\s+[A-ZÀ-Ý][a-zà-úçA-ZÀ-Ý'-]+|\s+et\s+al\.?)+\s*(?:\(\s*(?:19|20)\d{2}[a-z]?(?:\s*[,;:]\s*[^)]*)?\)|\[\s*(?:19|20)\d{2}[a-z]?(?:\s*[,;:]\s*[^\]]*)?\])",
+        " ",
+        texto,
+    )
+    # 2. Citacoes narrativas simples "Autor (2016)" ou "Autor [2016]"
+    texto = re.sub(
+        r"\b[A-ZÀ-Ý][a-zà-úçA-ZÀ-Ý'-]+\s+(?:\(\s*(?:19|20)\d{2}[a-z]?(?:\s*[,;:]\s*p\.?\s*\d+)?\s*\)|\[\s*(?:19|20)\d{2}[a-z]?\s*\])",
+        " ",
+        texto,
+    )
+    # 3. Citacoes entre colchetes ou parenteses contendo anos: [Barbosa et al. 2016], (Gomaa and Conrath, 1997; Kay, 1999)
+    texto = re.sub(r"\[[^\[\]]*\b(?:19|20)\d{2}[a-z]?\b[^\[\]]*\]", " ", texto)
+    texto = re.sub(r"\([^()]*\b(?:19|20)\d{2}[a-z]?\b[^()]*\)", " ", texto)
+    # 4. Citacoes numericas entre colchetes estilo IEEE: [1], [1, 2], [1-4]
+    texto = re.sub(r"\[\s*\d+(?:\s*[,;–-]\s*\d+)*\s*\]", " ", texto)
+    # 5. Qualquer "et al." residual que tenha sobrado sem ano
+    texto = re.sub(r"\bet\s+al\.?", " ", texto, flags=re.IGNORECASE)
+    # Limpa espacos antes de pontuacao e espacos duplos
+    texto = re.sub(r"\s+([.,;:!?])", r"\1", texto)
+    return re.sub(r"[ \t]{2,}", " ", texto).strip()
+
+
+def limpar_corpo_markdown(linhas: list[str]) -> list[str]:
+    """Descarta linhas de heading (#) e tabela (|) e limpa citacoes inline."""
+    limpas = []
+    for ln in linhas:
+        s = ln.strip()
+        if not s or s.startswith(_MARCADORES_MD):
+            continue
+        s = remover_citacoes_inline(s)
+        if s:
+            limpas.append(s)
+    return limpas
+
+
 def separar(md: str, meta: dict) -> dict:
     linhas = [ln for ln in md.splitlines() if ln.strip()]
     ref = achar_referencias(linhas)
@@ -97,10 +136,11 @@ def separar(md: str, meta: dict) -> dict:
         corpo_linhas = linhas[inicio_corpo(linhas) :]
         ref_linhas = []
 
-    corpo = "\n".join(x for x in corpo_linhas if x.strip()).strip()
-    referencias = [x.strip() for x in ref_linhas if x.strip()]
+    corpo_limpo = limpar_corpo_markdown(corpo_linhas)
+    corpo = "\n".join(corpo_limpo).strip()
+    referencias = [x.strip() for x in ref_linhas if x.strip() and not x.strip().startswith("#")]
     resumo = _tidy(meta["resumo"])
-    artigo_completo = f"{resumo}\n\n{corpo}".strip() if resumo else corpo
+    artigo_completo = corpo if corpo else remover_citacoes_inline(resumo)
 
     return {
         "titulo": _tidy(meta["titulo"]),
@@ -108,7 +148,11 @@ def separar(md: str, meta: dict) -> dict:
         "idioma": meta["idioma"],
         "storage_key": meta["storage_key"],
         "autores": [
-            {"nome": _tidy(a["nome"]), "afiliacao": _tidy(a["afiliacao"])}
+            {
+                "nome": _tidy(a["nome"]),
+                "afiliacao": _tidy(a.get("afiliacao", "")),
+                "orcid": _tidy(a.get("orcid", "")),
+            }
             for a in meta["autores"]
         ],
         "data_publicacao": meta["data_publicacao"],

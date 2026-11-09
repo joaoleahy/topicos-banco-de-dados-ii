@@ -4,8 +4,8 @@
 #   "spacy>=3.8,<3.9",
 #   "wordcloud",
 #   "matplotlib",
-#   "pt-core-news-sm @ https://github.com/explosion/spacy-models/releases/download/pt_core_news_sm-3.8.0/pt_core_news_sm-3.8.0-py3-none-any.whl",
-#   "en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl",
+#   "pt-core-news-lg @ https://github.com/explosion/spacy-models/releases/download/pt_core_news_lg-3.8.0/pt_core_news_lg-3.8.0-py3-none-any.whl",
+#   "en-core-web-lg @ https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.8.0/en_core_web_lg-3.8.0-py3-none-any.whl",
 # ]
 # ///
 """Etapa 6 — Contar.
@@ -13,7 +13,7 @@
 Junta os JSONs e monta as estatisticas do corpus pedidas na tarefa:
 
 - quantidade de tokens e de types
-- quantidade de sentencas (spaCy)
+- quantidade de sentencas (spaCy large)
 - quantidade por classe gramatical
 - quantidade de lemas (unicos)
 - Top 10 palavras (excluindo adjetivos e preposicoes)
@@ -30,6 +30,7 @@ Saida: corpus/estatisticas.json
 
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 from collections import Counter
@@ -48,7 +49,7 @@ JSON_DIR = ROOT / "corpus" / "json"
 SAIDA = ROOT / "corpus" / "estatisticas.json"
 
 STOPWORDS = set(STOP_PT) | set(STOP_EN)
-EXCLUIR_TOP = {"ADJ", "ADP"}  # a tarefa pede excluir adjetivos e preposicoes
+EXCLUIR_TOP = {"ADJ", "ADP", "PUNCT", "SYM", "SPACE", "NUM"}  # exclui adjetivos, preposicoes e nao-palavras
 
 
 def carregar() -> list[dict]:
@@ -69,7 +70,7 @@ def frequencias(
             continue
         for tok, tag in zip(a["artigo_tokenizado"], tags(a)):
             baixo = tok.lower()
-            if tag in EXCLUIR_TOP:
+            if tag in EXCLUIR_TOP or not any(c.isalpha() for c in baixo):
                 continue
             if sem_stopwords and baixo in STOPWORDS:
                 continue
@@ -114,7 +115,7 @@ def run(force: bool = False) -> int:
 
     import spacy
 
-    modelos = {"pt": spacy.load("pt_core_news_sm"), "en": spacy.load("en_core_web_sm")}
+    modelos = {"pt": spacy.load("pt_core_news_lg"), "en": spacy.load("en_core_web_lg")}
     sentencas = sum(
         len(list(modelos[a["idioma"]](a["artigo_completo"]).sents)) for a in artigos
     )
@@ -123,6 +124,8 @@ def run(force: bool = False) -> int:
     substantivos, verbos = Counter(), Counter()
     for tok, tag in zip(tokens, all_tags):
         baixo = tok.lower()
+        if not any(c.isalpha() for c in baixo):
+            continue
         if tag not in EXCLUIR_TOP:
             palavras[baixo] += 1
             if baixo not in STOPWORDS:
@@ -162,7 +165,10 @@ def run(force: bool = False) -> int:
 
 
 def main() -> int:
-    return run()
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--force", action="store_true")
+    args = ap.parse_args()
+    return run(force=args.force)
 
 
 if __name__ == "__main__":
