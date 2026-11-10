@@ -17,6 +17,7 @@ titulo+resumo quando o PDF nao traz explicitamente.
 - Tokenizacao exclui espacos, pontuacoes, simbolos e numerais; stopwords ficam (regra da tarefa).
 - pos_tagger no formato "TAG_token" (ex.: "NOUN_casa").
 - artigo_tokenizado/pos_tagger/lema tem o mesmo tamanho e ordem.
+- artigo_tokenizado_pontuado mantem pontuacao e numerais, para a geracao de texto da PRATICA 2.
 - keywords: sintagmas nominais do titulo (prioridade) e do resumo.
 
 Uso:
@@ -186,6 +187,11 @@ def processar(nlp, texto: str) -> tuple[list[str], list[str], list[str]]:
     return tokens, pos, lemas
 
 
+def tokenizar_pontuado(nlp, texto: str) -> list[str]:
+    """So o tokenizador do spaCy: o ponto final e o que marca o fim da frase na geracao."""
+    return [t.text for t in nlp.make_doc(texto) if not t.is_space]
+
+
 def run(force: bool = False) -> int:
     metas = json.loads(META_FILE.read_text())
     por_ordem = {f"article_{r['ordem']:02d}": r for r in metas}
@@ -193,7 +199,8 @@ def run(force: bool = False) -> int:
 
     falta_tokens = force or any(not d["artigo_tokenizado"] for _, d in arquivos)
     falta_kw = force or any(not d.get("keywords") for _, d in arquivos)
-    if not falta_tokens and not falta_kw:
+    falta_pontuado = force or any(not d.get("artigo_tokenizado_pontuado") for _, d in arquivos)
+    if not falta_tokens and not falta_kw and not falta_pontuado:
         print("todos os artigos ja processados", file=sys.stderr)
         return 0
 
@@ -208,6 +215,9 @@ def run(force: bool = False) -> int:
         if not dados["artigo_tokenizado"] or force:
             tokens, pos, lemas = processar(nlp[idioma], dados["artigo_completo"])
             dados["artigo_tokenizado"], dados["pos_tagger"], dados["lema"] = tokens, pos, lemas
+            mudou = True
+        if not dados.get("artigo_tokenizado_pontuado") or force:
+            dados["artigo_tokenizado_pontuado"] = tokenizar_pontuado(nlp[idioma], dados["artigo_completo"])
             mudou = True
         if not dados.get("keywords") or force:
             dados["keywords"] = extrair_keywords(nlp, dados["titulo"], dados["resumo"])

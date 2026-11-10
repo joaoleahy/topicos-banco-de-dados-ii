@@ -20,9 +20,20 @@ from __future__ import annotations
 import random
 from collections import Counter, defaultdict
 
-from ml.tokenizar import eh_palavra
-
 Tabela = dict[tuple[str, ...], Counter]
+
+
+def eh_palavra(token: str) -> bool:
+    return token[0].isalnum()
+
+
+def juntar(tokens: list[str]) -> str:
+    texto = " ".join(tokens)
+    for p in ".,;:!?)]":
+        texto = texto.replace(f" {p}", p)
+    for p in "([":
+        texto = texto.replace(f"{p} ", p)
+    return texto
 
 
 def contar(documentos: list[list[str]], n: int) -> Tabela:
@@ -52,13 +63,15 @@ def candidatos(
     n: int,
     saida: list[str],
     proibido=lambda w: False,
+    backoff: bool = True,
 ) -> Counter:
-    for k in range(min(n, len(saida) + 1), 0, -1):
+    ordem = min(n, len(saida) + 1)  # início do texto: ainda não há n-1 tokens de contexto
+    for k in range(ordem, 0 if backoff else ordem - 1, -1):
         linha = tabelas[k].get(tuple(saida[len(saida) - k + 1 :]) if k > 1 else (), Counter())
         linha = Counter({w: c for w, c in linha.items() if not proibido(w)})
         if linha:
             return linha
-    return tabelas[1][()]  # tudo bloqueado até no unigrama: aceita repetir
+    return tabelas[1][()] if backoff else Counter()  # tudo bloqueado até no unigrama: aceita repetir
 
 
 def gerar(
@@ -69,6 +82,8 @@ def gerar(
     seed: int = 0,
     gulosa: bool = False,
     bloquear: int = 0,
+    backoff: bool = True,
+    limite_tokens: int | None = None,
 ) -> list[str]:
     rng = random.Random(seed)
     saida = list(inicio)
@@ -79,8 +94,11 @@ def gerar(
         return bool(bloquear) and tuple(saida[len(saida) - bloquear + 1 :] + [w]) in vistos
 
     # a gulosa pode travar repetindo pontuação, que não conta como palavra
-    while palavras < max_palavras and len(saida) < 3 * max_palavras:
-        linha = candidatos(tabelas, n, saida, proibido)
+    limite = limite_tokens or 3 * max_palavras
+    while palavras < max_palavras and len(saida) < limite:
+        linha = candidatos(tabelas, n, saida, proibido, backoff)
+        if not linha:  # sem backoff: contexto sem candidato encerra o texto
+            break
         if gulosa:
             proximo = linha.most_common(1)[0][0]
         else:

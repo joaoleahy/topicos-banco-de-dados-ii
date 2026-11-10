@@ -161,6 +161,7 @@ def separar(md: str, meta: dict) -> dict:
         "referencias": referencias,
         "artigo_completo": artigo_completo,
         "artigo_tokenizado": [],
+        "artigo_tokenizado_pontuado": [],
         "pos_tagger": [],
         "lema": [],
     }

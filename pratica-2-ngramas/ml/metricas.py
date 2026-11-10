@@ -7,8 +7,7 @@
 
 from __future__ import annotations
 
-from ml.ngrama import kgramas
-from ml.tokenizar import eh_palavra
+from ml.ngrama import eh_palavra, kgramas
 
 
 def repetidos(tokens: list[str], k: int = 3) -> float:
@@ -28,6 +27,7 @@ def copia(tokens: list[str], corpus: list[list[str]], max_k: int = 40) -> int:
 
 def resumo(tokens: list[str], corpus: list[list[str]]) -> dict[str, str]:
     return {
+        "tokens": str(len(tokens)),
         "palavras": str(sum(map(eh_palavra, tokens))),
         "pontos finais": str(tokens.count(".")),
         "trigramas repetidos": f"{repetidos(tokens, 3):.0%}",

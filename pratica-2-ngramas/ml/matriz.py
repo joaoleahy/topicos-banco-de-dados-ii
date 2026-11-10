@@ -8,8 +8,7 @@ from __future__ import annotations
 
 from collections import Counter
 
-from ml.ngrama import Tabela, probabilidade
-from ml.tokenizar import eh_palavra
+from ml.ngrama import Tabela, eh_palavra, probabilidade
 
 
 def top_palavras(documentos: list[list[str]], k: int = 10) -> list[str]:

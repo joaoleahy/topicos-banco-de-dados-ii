@@ -1,13 +1,11 @@
 """Etapa 1 — Herdar o corpus da PRÁTICA 1.
 
 O `pratica-1-stil/corpus/` não vai pro git (é regenerado a partir dos PDFs).
-Aqui guardamos só o que a PRÁTICA 2 usa, em snapshots pequenos e versionados:
+Aqui guardamos só o que a PRÁTICA 2 usa, em um snapshot pequeno e versionado:
 
-    corpus/stil2017-v1.jsonl   limpeza original da PRÁTICA 1 (congelado)
-    corpus/stil2017.jsonl      depois de melhorar `pratica-1-stil/ml/limpar.py`
-                               (acento separado por espaço, hifenização)
+    corpus/stil2017.jsonl
 
-Campos: id, titulo, idioma, artigo_completo, artigo_tokenizado.
+Campos: id, titulo, idioma, artigo_tokenizado_pontuado.
 
 Se o snapshot já existir (ex.: no Colab, depois do git clone), não faz nada.
 
@@ -23,12 +21,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 ORIGEM = ROOT.parent / "pratica-1-stil" / "corpus" / "json"
-SNAPSHOTS = {
-    "v1": ROOT / "corpus" / "stil2017-v1.jsonl",
-    "v2": ROOT / "corpus" / "stil2017.jsonl",
-}
-SNAPSHOT = SNAPSHOTS["v2"]
-CAMPOS = ("titulo", "idioma", "artigo_completo", "artigo_tokenizado")
+SNAPSHOT = ROOT / "corpus" / "stil2017.jsonl"
+CAMPOS = ("titulo", "idioma", "artigo_tokenizado_pontuado")
 
 
 def run(force: bool = False) -> Path:
@@ -46,8 +40,8 @@ def run(force: bool = False) -> Path:
     return SNAPSHOT
 
 
-def carregar(idioma: str | None = None, versao: str = "v2") -> list[dict]:
-    artigos = [json.loads(l) for l in SNAPSHOTS[versao].read_text().splitlines()]
+def carregar(idioma: str | None = None) -> list[dict]:
+    artigos = [json.loads(l) for l in SNAPSHOT.read_text().splitlines()]
     if idioma:
         artigos = [a for a in artigos if a["idioma"] == idioma]
     return artigos
