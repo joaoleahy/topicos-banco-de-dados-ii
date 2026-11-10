@@ -1,0 +1,18 @@
+[project]
+name = "pratica-3-word2vec"
+version = "0.1.0"
+description = "PRÁTICA 3 — Word2Vec skip-gram sobre o corpus STIL 2017 e comparação com o NILC pré-treinado"
+requires-python = ">=3.11"
+dependencies = [
+    "gensim>=4.4",
+    "huggingface-hub",
+    "safetensors",
+    "numpy",
+    "pandas",
+    "ipykernel",
+    "ipywidgets",
+    "matplotlib>=3.11.2",
+]
+
+[tool.uv]
+package = false
