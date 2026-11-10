@@ -1,0 +1,192 @@
+\documentclass[aspectratio=169,xcolor=table]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[portuguese]{babel}
+\usepackage{tabularx,booktabs}
+
+\usetheme{DCC}
+\setbeamertemplate{itemize items}[circle]
+\setlength{\parskip}{0.5em}
+\setbeamersize{text margin left=1cm,text margin right=0.6cm}
+\graphicspath{{imgs/}}
+
+\author[João Victor, Lucas Rapozo, Antoniel Magalhães]{\textbf{João Victor}\\[0.12cm]\textbf{Lucas Rapozo}\\[0.12cm]\textbf{Antoniel Magalhães}}
+\title{NorBERTo: A ModernBERT Model Trained\\for Portuguese with 331B Tokens Corpus}
+\date{}
+
+\newcommand{\fonte}[1]{\par\vspace{0.12cm}{\scriptsize\color{gray}Fonte: Silva et al. (PROPOR 2026), #1.}}
+
+\begin{document}
+\hypersetup{pdfauthor={João Victor, Lucas Rapozo, Antoniel Magalhães},pdftitle={NorBERTo: A ModernBERT Model Trained for Portuguese with 331 Billion Tokens Corpus}}
+
+% 1 | 0:00--0:20 | João Victor
+\begin{frame}[plain,noframenumbering]\titlepage\end{frame}
+
+% 2 | 0:20--1:15 | João Victor
+\begin{frame}{Motivação: LLMs generativos versus Encoders dedicados}
+\begin{block}{A perspectiva de \textit{Right-Sized AI} para o português}
+\centering\normalsize
+Encoders compactos ($\sim$150M--395M) $\times$ LLMs generativos de bilhões de parâmetros %[cite: 53, 54]
+\end{block}
+\begin{itemize}\setlength{\itemsep}{0.6em}
+\item \textbf{Limites dos LLMs:} alto custo financeiro e computacional, latência elevada, restrições de privacidade/governança e risco de alucinações. %[cite: 51, 53]
+\item \textbf{Vantagem dos encoders:} modelos bidirecionais continuam superiores em custo-benefício para classificação, ranqueamento e sistemas de RAG. %[cite: 51, 53]
+\item \textbf{Defasagem no português:} o BERTimbau foi treinado em apenas 2,68 bilhões de tokens (brWaC) e sem os avanços recentes de arquitetura. %[cite: 52, 53]
+\end{itemize}
+\fonte{seções 1 e 2.1--2.2} %[cite: 51, 52, 53]
+\end{frame}
+
+% 3 | 1:15--2:20 | João Victor
+\begin{frame}{Contribuição 1: O corpus monolíngue Aurora-PT}
+\textbf{Evolução dos corpora abertos em língua portuguesa} %[cite: 53, 54]
+\begin{tabularx}{\textwidth}{@{}Xrr@{}}
+\toprule
+\textbf{Corpus} & \textbf{Tamanho em disco} & \textbf{Quantidade de documentos}\\\midrule
+Carolina / brWaC & 11 GB / 25 GB & 2,11 mi / 3,53 mi\\[0.3em] %[cite: 54]
+Aroeira / FineWeb-2\_Latn-por & 100 GB / 257 GB & 24,9 mi / 200 mi\\[0.3em] %[cite: 54]
+GigaVerbo (Tucano) & 780 GB & 145 mi\\[0.3em] %[cite: 52, 54]
+\textbf{Aurora-PT (Silva et al., 2026)} & \textbf{873 GB} & \textbf{275 mi}\\\bottomrule %[cite: 54]
+\end{tabularx}\par
+\vspace{0.2cm}
+\begin{itemize}\setlength{\itemsep}{0.4em}
+\item Reúne 9 bases (FineWeb v2 com 90,8\% de retenção, mC4 com 46,7\%, HPLT 2.0, Aroeira, MOSCAR, Wikipédia, Blogset-br, Aya e CC100). %[cite: 54]
+\item Totaliza \textbf{331 bilhões de tokens} (referência GPT-2) ou \textbf{226 bilhões} no tokenizador próprio. %[cite: 51, 54]
+\end{itemize}
+\fonte{seções 2.3 e 3.1; Tabelas 1 e 2} %[cite: 53, 54]
+\end{frame}
+
+% 4 | 2:20--3:20 | João Victor
+\begin{frame}{Curadoria de dados e avaliação intrínseca do Aurora-PT}
+\begin{columns}[t,onlytextwidth]
+\begin{column}{0.48\textwidth}
+\begin{block}{Pipeline de filtragem (DataTrove)}
+\begin{enumerate}\setlength{\itemsep}{0.45em}
+\item \textbf{Idioma:} GlotLID (limiar $\ge 0,799$). %[cite: 54]
+\item \textbf{Desduplicação:} MinHash com 112 hashes distribuídos em 14 \textit{buckets}. %[cite: 54]
+\item \textbf{Heurísticas C4 e FineWeb:} remoção de linhas curtas, código (\texttt{\{\}}, \textit{Javascript}, \textit{cookies}) e baixa pontuação. %[cite: 54]
+\end{enumerate}
+\end{block}
+\end{column}
+\begin{column}{0.48\textwidth}
+\begin{block}{Qualidade lexical e perplexidade}
+\begin{itemize}\setlength{\itemsep}{0.45em}
+\item \textbf{Diversidade estável:} TTR mediano de 0,567 e HD-D alinhado aos pares. %[cite: 55]
+\item \textbf{Composição:} densidade lexical de 0,465 e \textit{stopwords} em 0,350. %[cite: 56]
+\item \textbf{Menor perplexidade (mGPT):} 20.438 contra 51.199 do GigaVerbo. %[cite: 56]
+\end{itemize}
+\end{block}
+\end{column}
+\end{columns}
+\vspace{0.15cm}
+\small\textbf{Ressalva metodológica:} a baixa perplexidade pode refletir sobreposição parcial com dados de treino do mGPT. %[cite: 57]
+\fonte{seções 3.1 e 4.1; Figuras 1--2 e Tabelas 5--6} %[cite: 54, 55, 56, 57]
+\end{frame}
+
+% 5 | 3:20--4:25 | Lucas Rapozo
+\begin{frame}{Contribuição 2: Arquitetura do NorBERTo (ModernBERT)}
+\begin{tabularx}{\textwidth}{@{}Xrr@{}}
+\toprule
+\textbf{Parâmetro arquitetural} & \textbf{NorBERTo-base ($\sim$150M)} & \textbf{NorBERTo-large ($\sim$395M)}\\\midrule
+Vocabulário / Contexto máximo & 50.368 / 8.192 tokens & 50.368 / 8.192 tokens\\[0.3em] %[cite: 54, 55]
+Camadas / Dimensão oculta (\textit{Hidden}) & 22 / 768 & 28 / 1.024\\[0.3em] %[cite: 54, 55]
+Cabeças de atenção / Expansão GLU & 12 / 2.304 & 16 / 5.248\\[0.3em] %[cite: 54, 55]
+Padrão de atenção (\textit{Global} vs. \textit{Local}) & Global na 1ª e a cada 3; Local: 128 & Global na 1ª e a cada 3; Local: 128\\\bottomrule %[cite: 54, 55]
+\end{tabularx}\par
+\vspace{0.2cm}
+\begin{itemize}\setlength{\itemsep}{0.4em}
+\item Incorpora \textbf{RoPE} ($\theta = 160.000$ global e $10.000$ local), camadas \textbf{GeGLU} sem viés (\textit{bias-free}), além de \textit{sequence packing} e \textit{unpadding} com FlashAttention v2. %[cite: 54, 55]
+\end{itemize}
+\fonte{seção 3.2 e Tabela 3} %[cite: 54, 55]
+\end{frame}
+
+% 6 | 4:25--5:50 | Lucas Rapozo
+\begin{frame}{Treinamento em três fases para extensão de contexto}
+\textbf{Divisão dos 226 bilhões de tokens (MLM com mascaramento de 30\%)} %[cite: 55, 56]
+\begin{tabularx}{\textwidth}{@{}p{4.2cm}rrr@{}}
+\toprule
+\textbf{Configuração} & \textbf{1. Pré-treino (85\%)} & \textbf{2. Extensão (12,5\%)} & \textbf{3. Decay (2,5\%)}\\\midrule
+Volume de tokens & 195B & 29B & 6B\\[0.3em] %[cite: 55, 56]
+Janela máxima de contexto & 1.024 & 8.192 & 8.192\\[0.3em] %[cite: 55, 56]
+Batch size (Base / Large) & 4.096 / 4.928 & 616 / 576 & 624 / 576\\[0.3em] %[cite: 56]
+Taxa de aprendizado (Base / Large) & $8\text{e-}4$ / $5\text{e-}4$ & $3\text{e-}4$ / $5\text{e-}5$ & $3\text{e-}4$ / $5\text{e-}5$\\\bottomrule %[cite: 56]
+\end{tabularx}\par
+\vspace{0.2cm}
+\begin{itemize}\setlength{\itemsep}{0.4em}
+\item Documentos com mais de 1.024 tokens são reservados para as fases 2 e 3. %[cite: 55]
+\item Treinamento concluído em 1 época ($\sim$3 dias) usando 8 GPUs NVIDIA H100 e otimizador Stable AdamW (pesos do \textit{Large} inicializados via \textit{tiling} do \textit{Base}). %[cite: 55, 56]
+\end{itemize}
+\fonte{seção 3.2 e Tabela 4} %[cite: 55, 56]
+\end{frame}
+
+% 7 | 5:50--7:00 | Lucas Rapozo
+\begin{frame}{Evidência 1: Inferência e Similaridade no ASSIN 2}
+\textbf{Avaliação em 10.000 pares de sentenças (6.500 treino, 500 validação, 2.448 teste)} %[cite: 57]
+\begin{tabularx}{\textwidth}{@{}Xrrr@{}}
+\toprule
+\textbf{Modelo} & \textbf{Tamanho} & \textbf{Entailment (F1)} & \textbf{Similaridade (Pearson)}\\\midrule
+Albertina PT-BR & base & 0,8740 & 0,826\\[0.3em] %[cite: 58]
+BERTimbau & base / large & 0,8833 / 0,8891 & 0,836 / \textbf{0,852}\\[0.3em] %[cite: 58]
+mmBERT & base & 0,8963 & 0,8212\\[0.3em] %[cite: 58]
+\textbf{NorBERTo} & base & 0,8900 & 0,736\\[0.3em] %[cite: 58]
+\textbf{NorBERTo (seq. class. / cross enc.)} & large & \textbf{0,9038} / 0,9033 & --- / 0,766\\\bottomrule %[cite: 58]
+\end{tabularx}\par
+\vspace{0.2cm}
+\begin{itemize}\setlength{\itemsep}{0.4em}
+\item \textbf{Contraste importante:} lidera em acarretamento textual (90,4\% F1), mas fica atrás em similaridade semântica (0,766 vs. 0,852) por ser treinado do zero (\textit{from scratch}), sem herdar checkpoints do inglês. %[cite: 57, 58]
+\end{itemize}
+\fonte{seção 4.2.1 e Tabela 7} %[cite: 57, 58]
+\end{frame}
+
+% 8 | 7:00--7:55 | Antoniel Magalhães
+\begin{frame}{Evidência 2: Estado da Arte no Benchmark PLUE}
+\textbf{Versão traduzida do GLUE para o português (F1-score / Acurácia)} %[cite: 51, 57, 58]
+\begin{tabularx}{\textwidth}{@{}Xrrrr@{}}
+\toprule
+\textbf{Modelo} & \textbf{Tamanho} & \textbf{MRPC (Paráfrase)} & \textbf{RTE (Inferência)} & \textbf{WNLI (Correferência)}\\\midrule
+Albertina PT-BR & base & 0,8779 & 0,6462 & 0,5493\\[0.3em] %[cite: 58]
+BERTimbau & large (340M) & 0,8873 & 0,7545 & 0,5634\\[0.3em] %[cite: 58]
+mmBERT & base & 0,9051 & 0,7582 & 0,5633\\[0.3em] %[cite: 58]
+\textbf{NorBERTo} & base (150M) & 0,8926 & 0,7220 & \textbf{0,5774}\\[0.3em] %[cite: 58]
+\textbf{NorBERTo} & large (395M) & \textbf{0,9191} & \textbf{0,7689} & \textbf{0,5774}\\\bottomrule %[cite: 58]
+\end{tabularx}\par
+\vspace{0.2cm}
+\begin{itemize}\setlength{\itemsep}{0.4em}
+\item O \textbf{NorBERTo-large} supera o BERTimbau-large em todas as tarefas (+3,2 pontos no MRPC e +1,4 no RTE e WNLI). %[cite: 57, 58]
+\item O \textbf{NorBERTo-base} (150M) supera o BERTimbau-large (340M) no MRPC e no WNLI com menos da metade dos parâmetros. %[cite: 58]
+\end{itemize}
+\fonte{seção 4.2.2 e Tabela 8} %[cite: 57, 58]
+\end{frame}
+
+% 9 | 7:55--9:00 | Antoniel Magalhães
+\begin{frame}{Evidência 3: Tarefas de Classificação e Redes Sociais}
+\begin{itemize}\setlength{\itemsep}{0.6em}
+\item Otimização sistemática de hiperparâmetros (HPO com Optuna) em 4 bases brasileiras: \textbf{TweetSent-BR}, \textbf{Hate-BR}, \textbf{TuPy-E} e \textbf{FakeRecogna 2.0}. %[cite: 61]
+\item \textbf{Alta competitividade:} o NorBERTo-large empata tecnicamente com o melhor modelo multilíngue (XLM-RoBERTa-large) em detecção de notícias falsas (\textbf{98,3\% vs. 98,4\%} no FakeRecogna 2.0) e discurso de ódio (\textbf{92,1\% vs. 93,0\%} no Hate-BR). %[cite: 61]
+\item \textbf{Onde outros modelos lideram:} o XLM-RoBERTa-large vence no TweetSent-BR (79,5\%) e o BERTimbau lidera na classificação multiclasse do TuPy-E (90,8\%). %[cite: 61]
+\item Os resultados sustentam uma abordagem de ``caixa de ferramentas'' (\textit{toolbox}), escolhendo o encoder conforme o domínio. %[cite: 58]
+\end{itemize}
+\fonte{seção 5 e Apêndice A, Tabela 9} %[cite: 58, 61]
+\end{frame}
+
+% 10 | 9:00--10:00 | Antoniel Magalhães
+\begin{frame}{Conclusão e limites da evidência}
+\begin{itemize}\setlength{\itemsep}{0.65em}
+\item Combinar o corpus massivo Aurora-PT (331B tokens) com a arquitetura ModernBERT eleva o estado da arte em inferência textual e no benchmark PLUE em português. %[cite: 51, 58]
+\item O modelo viabiliza aplicações reais de \textit{right-sized AI} e leitura de documentos longos (até 8.192 tokens) sem truncamento, ideal para pipelines de RAG. %[cite: 51, 53, 58]
+\item \textbf{Limite de escala no pré-treino:} os 226B de tokens efetivos ainda estão abaixo da escala de trilhões de tokens usada no ModernBERT original em inglês. %[cite: 58, 59]
+\item \textbf{Limite em similaridade e avaliação:} o treino do zero reduziu a correlação de similaridade no ASSIN 2, e os testes atuais ainda não avaliam tarefas de contexto longo em português. %[cite: 57, 58]
+\end{itemize}
+\fonte{seções 4.2.1, 5 e Limitations; análise crítica da equipe} %[cite: 57, 58, 59]
+\end{frame}
+
+\appendix
+\begin{frame}[noframenumbering]{Artigo de referência}
+\textbf{NorBERTo: A ModernBERT Model Trained for Portuguese with 331 Billion Tokens Corpus}
+
+Enzo S. N. Silva; Pablo B. Costa; Raphael C. Vlasman; Rosimeire P. Costa; Henrique L. P. Silva; Lucas F. A. O. Pellicer; Guilherme Rinaldo; Renato A. Almeida; Darian S. R. Rabbani; Cinthya O. Oestreich; Vinicius F. Caridá. Itaú Unibanco e ICTi. \textit{Proceedings of the 17th International Conference on Computational Processing of Portuguese (PROPOR 2026)}, Salvador, Brasil, 2026. %[cite: 51]
+
+\small Síntese baseada no PDF fornecido pela disciplina. Os dados e tabelas dos slides reproduzem as estatísticas do corpus Aurora-PT e os experimentos das Tabelas 1 a 9 do artigo. %[cite: 51, 54, 55, 56, 57, 58, 61]
+\end{frame}
+
+\end{document}

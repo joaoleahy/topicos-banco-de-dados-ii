@@ -1,0 +1,193 @@
+\documentclass[aspectratio=169,xcolor=table]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[portuguese]{babel}
+\usepackage{tabularx,booktabs}
+
+\usetheme{DCC}
+\setbeamertemplate{itemize items}[circle]
+\setlength{\parskip}{0.5em}
+\setbeamersize{text margin left=1cm,text margin right=0.6cm}
+\graphicspath{{imgs/}}
+
+\author[João Victor, Lucas Rapozo, Antoniel Magalhães]{\textbf{João Victor}\\[0.12cm]\textbf{Lucas Rapozo}\\[0.12cm]\textbf{Antoniel Magalhães}}
+\title{Distributed Representations of\\Sentences and Documents}
+\date{}
+
+\newcommand{\fonte}[1]{\par\vspace{0.12cm}{\scriptsize\color{gray}Fonte: Le \& Mikolov (ICML 2014), #1.}}
+
+\begin{document}
+\hypersetup{pdfauthor={João Victor, Lucas Rapozo, Antoniel Magalhães},pdftitle={Distributed Representations of Sentences and Documents}}
+
+% 1 | 0:00--0:20 | João Victor
+\begin{frame}[plain,noframenumbering]\titlepage\end{frame}
+
+% 2 | 0:20--1:15 | João Victor
+\begin{frame}{O problema: representar textos em tamanho fixo}
+\begin{block}{Limitações das abordagens clássicas (Bag-of-Words e N-gramas)}
+\centering\normalsize
+$\text{dist}(\texttt{powerful}, \texttt{strong}) = \text{dist}(\texttt{powerful}, \texttt{Paris})$
+\end{block}
+\begin{itemize}\setlength{\itemsep}{0.6em}
+\item Algoritmos como regressão logística e $K$-means exigem vetores de tamanho fixo na entrada. %[cite: 42]
+\item \textbf{Bag-of-Words (BoW):} perde a ordem das palavras e ignora a distância semântica entre os termos. %[cite: 42]
+\item \textbf{Média de vetores e árvores sintáticas:} a média perde a ordem das palavras; modelos baseados em \textit{parsing} ficam restritos a sentenças isoladas. %[cite: 43, 46]
+\end{itemize}
+\fonte{seção 1} %[cite: 42, 43]
+\end{frame}
+
+% 3 | 1:15--2:20 | João Victor
+\begin{frame}{Proposta: Paragraph Vector (Doc2Vec)}
+\begin{itemize}\setlength{\itemsep}{0.65em}
+\item Algoritmo não supervisionado que aprende vetores densos de tamanho fixo para textos de comprimento variável (frases, parágrafos ou documentos). %[cite: 42]
+\item \textbf{Inspiração no Word2Vec:} vetores inicializados aleatoriamente capturam semântica ao contribuírem para prever a próxima palavra no contexto. %[cite: 43, 44]
+\item \textbf{Memória distribuída:} cada documento recebe um vetor exclusivo na matriz $D$, enquanto os vetores de palavras na matriz $W$ são compartilhados no corpus. %[cite: 44]
+\item O treinamento utiliza descida de gradiente estocástica (SGD) com \textit{hierarchical softmax} baseada em árvore binária de Huffman. %[cite: 43, 44]
+\end{itemize}
+\fonte{seções 1, 2.1 e 2.2} %[cite: 42, 43, 44]
+\end{frame}
+
+% 4 | 2:20--3:20 | João Victor
+\begin{frame}{Arquitetura 1: Memória Distribuída (PV-DM)}
+\begin{columns}[c,onlytextwidth]
+\begin{column}{0.48\textwidth}
+\begin{block}{Fluxo de predição no PV-DM}
+\centering\small
+Entrada: $\text{ID do Parágrafo } (D) + [\texttt{the}, \texttt{cat}, \texttt{sat}] (W)$\\[0.2cm]
+$\Downarrow$ \textit{Concatenar ou promediar ($h$)}\\[0.2cm]
+Classificador Softmax: $y = b + Uh$\\[0.2cm]
+$\Downarrow$\\[0.2cm]
+Saída prevista: \textbf{\texttt{on}}
+\end{block}
+\end{column}
+\begin{column}{0.48\textwidth}
+\begin{enumerate}\setlength{\itemsep}{0.55em}
+\item O token do parágrafo atua como memória do tópico global que falta na janela local. %[cite: 44]
+\item O vetor $D$ é reutilizado em todas as janelas deslizantes amostradas do mesmo texto. %[cite: 44]
+\item Total de parâmetros (sem o softmax): $N \times p + M \times q$, com atualizações esparsas. %[cite: 44]
+\end{enumerate}
+\end{column}
+\end{columns}
+\fonte{seção 2.2, Equação 1 e Figura 2} %[cite: 43, 44]
+\end{frame}
+
+% 5 | 3:20--4:25 | Lucas Rapozo
+\begin{frame}{Arquitetura 2 (PV-DBOW) e Etapa de Inferência}
+\begin{columns}[t,onlytextwidth]
+\begin{column}{0.48\textwidth}
+\begin{block}{PV-DBOW (Bag of Words Distribuído)}
+\begin{itemize}\setlength{\itemsep}{0.45em}
+\item Ignora palavras na entrada e prevê palavras sorteadas da janela usando apenas o vetor $D$. %[cite: 45]
+\item Análogo ao \textit{Skip-gram}; exige menos armazenamento por não manter a matriz $W$. %[cite: 45]
+\end{itemize}
+\end{block}
+\end{column}
+\begin{column}{0.48\textwidth}
+\begin{block}{Inferência para novos textos}
+\begin{itemize}\setlength{\itemsep}{0.45em}
+\item Em documentos inéditos, congelam-se os vetores de palavras $W$ e os pesos $U, b$. %[cite: 42, 44]
+\item Adiciona-se uma coluna em $D$, otimizada via gradiente até convergir. %[cite: 44]
+\end{itemize}
+\end{block}
+\end{column}
+\end{columns}
+\vspace{0.2cm}
+\textbf{Recomendação prática:} concatenar os vetores do PV-DM (400 dimensões) e do PV-DBOW (400 dimensões) para alimentar o classificador final. %[cite: 45, 46, 47]
+\fonte{seções 2.2, 2.3 e Figura 3} %[cite: 44, 45]
+\end{frame}
+
+% 6 | 4:25--5:50 | Lucas Rapozo
+\begin{frame}{Evidência 1: Análise de Sentimento em Sentenças (SST)}
+\textbf{Desempenho no Stanford Sentiment Treebank (11.855 sentenças)} %[cite: 45, 46]
+\begin{tabularx}{\textwidth}{@{}Xrr@{}}
+\toprule
+\textbf{Modelo} & \textbf{Taxa de erro (Binário)} & \textbf{Taxa de erro (5 classes)}\\\midrule
+Naïve Bayes / SVM (Socher et al., 2013b) & 18,2\% / 20,6\% & 59,0\% / 59,3\%\\[0.3em] %[cite: 46]
+Média de Vetores de Palavras & 19,9\% & 67,3\%\\[0.3em] %[cite: 46]
+Recursive Neural Tensor Network (RNTN) & 14,6\% & 54,3\%\\[0.3em] %[cite: 46]
+\textbf{Paragraph Vector (PV-DM + PV-DBOW)} & \textbf{12,2\%} & \textbf{51,3\%}\\\bottomrule %[cite: 46]
+\end{tabularx}\par
+\vspace{0.2cm}
+\begin{itemize}\setlength{\itemsep}{0.4em}
+\item Redução absoluta de \textbf{2,4 pontos percentuais} no erro binário (16\% de melhoria relativa) sobre a RNTN, sem depender de árvores sintáticas (\textit{parsing}). %[cite: 43, 46]
+\end{itemize}
+\fonte{seção 3.1 e Tabela 1; janela ótima de tamanho 8 com regressão logística} %[cite: 45, 46]
+\end{frame}
+
+% 7 | 5:50--7:00 | Lucas Rapozo
+\begin{frame}{Evidência 2: Documentos de Múltiplas Sentenças (IMDB)}
+\textbf{Classificação em 100.000 avaliações longas (25k treino, 25k teste, 50k sem rótulo)} %[cite: 46, 47]
+\begin{tabularx}{\textwidth}{@{}Xr@{}}
+\toprule
+\textbf{Modelo} & \textbf{Taxa de erro}\\\midrule
+Bag-of-Words (bnc) (Maas et al., 2011) & 12,20\%\\[0.3em] %[cite: 47]
+WRRBM + Bag-of-Words (bnc) (Dahl et al., 2012) & 10,77\%\\[0.3em] %[cite: 47]
+SVM-bi / NBSVM-bi (Wang \& Manning, 2012) & 10,84\% / 8,78\%\\[0.3em] %[cite: 47]
+\textbf{Paragraph Vector (PV-DM + PV-DBOW)} & \textbf{7,42\%}\\\bottomrule %[cite: 47]
+\end{tabularx}\par
+\vspace{0.2cm}
+\begin{itemize}\setlength{\itemsep}{0.4em}
+\item Único método avaliado a romper a barreira de 10\% de erro com folga (melhoria relativa de 15\% sobre o NBSVM-bi), superando o limite de frase única das redes recursivas. %[cite: 46, 47]
+\end{itemize}
+\fonte{seção 3.2 e Tabela 2; janela de 10 palavras e rede neural com 50 unidades ocultas} %[cite: 47]
+\end{frame}
+
+% 8 | 7:00--7:55 | Antoniel Magalhães
+\begin{frame}{Evidência 3: Recuperação de Informação em Trincas}
+\textbf{Identificação de \textit{snippets} da mesma consulta (1 milhão de buscas)} %[cite: 47, 48]
+\begin{tabularx}{\textwidth}{@{}Xr@{}}
+\toprule
+\textbf{Método de representação} & \textbf{Taxa de erro na trinca}\\\midrule
+Média de Vetores de Palavras (\textit{Vector Averaging}) & 10,25\%\\[0.3em] %[cite: 48]
+Bag-of-Words (TF-IDF) & 8,10\%\\[0.3em] %[cite: 48]
+Bag-of-Bigrams / Weighted Bag-of-Bigrams (TF-IDF) & 7,28\% / 5,67\%\\[0.3em] %[cite: 48]
+\textbf{Paragraph Vector} & \textbf{3,82\%}\\\bottomrule %[cite: 48]
+\end{tabularx}\par
+\vspace{0.2cm}
+\begin{itemize}\setlength{\itemsep}{0.4em}
+\item O erro ocorre quando dois resultados da mesma consulta ficam mais distantes entre si do que um parágrafo aleatório de outra busca (melhoria relativa de \textbf{32\%}). %[cite: 47, 48]
+\end{itemize}
+\fonte{seção 3.3 e Tabela 3; divisão 80\% treino, 10\% validação e 10\% teste} %[cite: 47, 48]
+\end{frame}
+
+% 9 | 7:55--9:00 | Antoniel Magalhães
+\begin{frame}{Ablações e escolhas de projeto no IMDB}
+\begin{tabularx}{\textwidth}{@{}Xrr@{}}
+\toprule
+\textbf{Configuração analisada} & \textbf{Taxa de erro (IMDB)} & \textbf{Impacto observado}\\\midrule
+PV-DM isolado (com concatenação) & 7,63\% & Desempenho próximo ao estado da arte sozinho.\\[0.35em] %[cite: 48]
+PV-DM isolado (com soma/média) & 8,06\% & Perde informação de ordem das palavras na janela.\\[0.35em] %[cite: 48]
+Combinação PV-DM + PV-DBOW & \textbf{7,42\%} & Mais consistente entre diferentes tarefas.\\\bottomrule %[cite: 45, 48]
+\end{tabularx}\par
+\vspace{0.2cm}
+\begin{itemize}\setlength{\itemsep}{0.45em}
+\item \textbf{Sensibilidade à janela:} variar o tamanho da janela entre 5 e 12 palavras altera a taxa de erro em até 0,7 ponto percentual. %[cite: 48]
+\item \textbf{Custo de teste:} inferir os vetores dos 25.000 textos de teste do IMDB (~230 palavras cada) levou \textbf{30 minutos} em uma máquina de 16 núcleos. %[cite: 48]
+\end{itemize}
+\fonte{seção 3.4} %[cite: 48]
+\end{frame}
+
+% 10 | 9:00--10:00 | Antoniel Magalhães
+\begin{frame}{Conclusão e limites da evidência}
+\begin{itemize}\setlength{\itemsep}{0.65em}
+\item O Paragraph Vector supera representações BoW e redes baseadas em árvores sintáticas ao preservar semântica e ordem local em textos de qualquer tamanho. %[cite: 42, 45, 49]
+\item O aprendizado não supervisionado permite aproveitar grandes volumes de dados não rotulados (como os 50 mil textos extras no IMDB). %[cite: 45, 47]
+\item \textbf{Limite de inferência:} ao contrário de um \textit{forward pass} direto, documentos inéditos exigem otimização iterativa por gradiente antes da classificação. %[cite: 44, 48]
+\item \textbf{Memória e contexto:} a matriz $D$ cresce linearmente com o número de documentos ($N \times p$) e a ordem das palavras é capturada apenas dentro da janela fixa. %[cite: 44, 45]
+\end{itemize}
+\fonte{seções 2.2, 3.4 e 5; análise crítica da equipe} %[cite: 44, 48, 49]
+\end{frame}
+
+\appendix
+\begin{frame}[noframenumbering]{Artigo de referência}
+\textbf{Distributed Representations of Sentences and Documents}
+
+Quoc Le; Tomas Mikolov. Google Inc. \textit{Proceedings of the 31st International Conference on Machine Learning (ICML 2014)}, JMLR: W\&CP volume 32, Beijing, China, 2014. %[cite: 42]
+
+\href{https://proceedings.mlr.press/v32/le14.html}{JMLR v32 / arXiv:1405.4053}
+
+\small Síntese baseada no PDF fornecido. Os esquemas e tabelas dos slides reproduzem os modelos descritos nas Figuras 1--3 e os resultados das Tabelas 1--3 do artigo original. %[cite: 43, 44, 45, 46, 47, 48]
+\end{frame}
+
+\end{document}
