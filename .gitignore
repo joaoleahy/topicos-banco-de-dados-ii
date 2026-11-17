@@ -12,6 +12,9 @@ __pycache__/
 # uv
 pratica-1-stil/.venv/
 pratica-2-ngramas/.venv/
+pratica-4-bert/.venv/
+pratica-4-bert/modelos/
+pratica-4-bert/resultados/
 
 # LaTeX: manter os PDFs finais e ignorar arquivos intermediários
 *.aux
