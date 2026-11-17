@@ -32,16 +32,16 @@ def run(force: bool = False) -> Path:
     if not arquivos:
         raise FileNotFoundError(f"snapshot ausente e PRÁTICA 1 não encontrada em {ORIGEM}")
     SNAPSHOT.parent.mkdir(parents=True, exist_ok=True)
-    with SNAPSHOT.open("w") as f:
+    with SNAPSHOT.open("w", encoding="utf-8") as f:
         for p in arquivos:
-            d = json.loads(p.read_text())
+            d = json.loads(p.read_text(encoding="utf-8"))
             linha = {"id": p.stem, **{c: d[c] for c in CAMPOS}}
             f.write(json.dumps(linha, ensure_ascii=False) + "\n")
     return SNAPSHOT
 
 
 def carregar(idioma: str | None = None) -> list[dict]:
-    artigos = [json.loads(l) for l in SNAPSHOT.read_text().splitlines()]
+    artigos = [json.loads(l) for l in SNAPSHOT.read_text(encoding="utf-8").splitlines() if l.strip()]
     if idioma:
         artigos = [a for a in artigos if a["idioma"] == idioma]
     return artigos

@@ -43,3 +43,23 @@ def heatmap(ax, M: list[list[float]], linhas: list[str], colunas: list[str], tit
         for j, p in enumerate(row):
             ax.text(j, i, f"{p:.2f}", ha="center", va="center", fontsize=7, color="white" if p > topo / 2 else "black")
     ax.figure.colorbar(im, ax=ax, fraction=0.046)
+
+
+def plotar_matrizes(tabelas: dict[int, Tabela], documentos: list[list[str]], k: int = 10) -> None:
+    import matplotlib.pyplot as plt
+
+    top = top_palavras(documentos, k)
+    ctx_bi = [(w,) for w in top]
+    ctx_tri = top_contextos(tabelas[3], k)
+    paineis = [
+        ("unigrama: P(w)", [()] * k, top, tabelas[1], top),
+        ("bigrama: P(w | a)", ctx_bi, top, tabelas[2], top_sucessores(tabelas[2], ctx_bi, k)),
+        ("trigrama: P(w | a, b)", ctx_tri, [" ".join(c) for c in ctx_tri], tabelas[3], top_sucessores(tabelas[3], ctx_tri, k)),
+    ]
+
+    fig, axes = plt.subplots(1, 3, figsize=(22, 7))
+    for ax, (titulo, contextos, rotulos, tabela, colunas) in zip(axes, paineis):
+        heatmap(ax, submatriz(tabela, contextos, colunas), rotulos, colunas, titulo)
+    axes[0].set_ylabel("contexto (unigrama ignora)")
+    fig.tight_layout()
+    plt.show()
