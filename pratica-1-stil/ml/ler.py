@@ -53,7 +53,7 @@ def run(force: bool = False) -> int:
         except Exception as e:  # noqa: BLE001
             print(f"[{n}/{len(pdfs)}] {pdf.stem} ERRO: {type(e).__name__}: {e}", file=sys.stderr)
             continue
-        destino.write_text(md)
+        destino.write_text(md, encoding="utf-8")
         metodos[metodo] += 1
         print(f"[{n}/{len(pdfs)}] {pdf.stem} -> {destino.name} ({metodo}, {len(md)} chars)", file=sys.stderr)
 

@@ -77,7 +77,7 @@ def pdf_ok(caminho: Path) -> bool:
 def corpus_pronto() -> bool:
     if not META_FILE.exists():
         return False
-    registros = json.loads(META_FILE.read_text())
+    registros = json.loads(META_FILE.read_text(encoding="utf-8"))
     return bool(registros) and all(pdf_ok(ROOT / r["storage_key"]) for r in registros)
 
 
@@ -140,11 +140,11 @@ def run(force: bool = False) -> int:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
 
     if not force and corpus_pronto():
-        n = len(json.loads(META_FILE.read_text()))
+        n = len(json.loads(META_FILE.read_text(encoding="utf-8")))
         print(f"{n} artigos ja em {META_FILE.relative_to(ROOT)}", file=sys.stderr)
         return 0
     if META_FILE.exists() and not force:
-        registros = json.loads(META_FILE.read_text())
+        registros = json.loads(META_FILE.read_text(encoding="utf-8"))
         faltando = [r for r in registros if not pdf_ok(ROOT / r["storage_key"])]
         print(f"metadados ok; faltam {len(faltando)} pdfs", file=sys.stderr)
         baixar_pdfs(registros, force=False)
@@ -173,7 +173,7 @@ def run(force: bool = False) -> int:
     # 3) baixa os PDFs numerados
     baixar_pdfs(registros, force=force)
 
-    META_FILE.write_text(json.dumps(registros, ensure_ascii=False, indent=2) + "\n")
+    META_FILE.write_text(json.dumps(registros, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"\n{len(registros)} artigos -> {META_FILE.relative_to(ROOT)}", file=sys.stderr)
     return 0
 

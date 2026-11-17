@@ -123,10 +123,27 @@ def _frases_nominais(doc) -> list[str]:
     return frases
 
 
-def extrair_keywords(nlp: dict, titulo: str, resumo: str, k: int = N_KEYWORDS) -> list[str]:
-    """Keywords do título (prioridade) + resumo. O SOL/PDF não trazem o campo."""
-    do_titulo = _frases_nominais(nlp[_lingua(titulo)](titulo))
-    do_resumo = _frases_nominais(nlp[_lingua(resumo)](resumo)) if resumo else []
+def extrair_keywords(
+    nlp: dict,
+    titulo: str,
+    resumo: str,
+    k: int = N_KEYWORDS,
+    idioma: str | None = None,
+    corpo: str = "",
+) -> list[str]:
+    """Keywords do título (prioridade) + resumo no idioma do artigo (fallback para início do corpo)."""
+    lang_tit = idioma if idioma and _lingua(titulo) == idioma else _lingua(titulo)
+    do_titulo = _frases_nominais(nlp[lang_tit](titulo))
+    if resumo and (idioma is None or _lingua(resumo) == idioma):
+        fonte_secundaria = resumo
+        lang_sec = _lingua(resumo)
+    elif corpo:
+        fonte_secundaria = corpo[:1500]
+        lang_sec = idioma or _lingua(fonte_secundaria)
+    else:
+        fonte_secundaria = resumo
+        lang_sec = _lingua(resumo) if resumo else "pt"
+    do_resumo = _frases_nominais(nlp[lang_sec](fonte_secundaria)) if fonte_secundaria else []
     tit_low = {f.lower() for f in do_titulo}
     palavras_titulo = {p for f in do_titulo for p in f.lower().split() if len(p) >= 4}
 
@@ -193,9 +210,9 @@ def tokenizar_pontuado(nlp, texto: str) -> list[str]:
 
 
 def run(force: bool = False) -> int:
-    metas = json.loads(META_FILE.read_text())
+    metas = json.loads(META_FILE.read_text(encoding="utf-8"))
     por_ordem = {f"article_{r['ordem']:02d}": r for r in metas}
-    arquivos = [(p, json.loads(p.read_text())) for p in sorted(JSON_DIR.glob("article_*.json"))]
+    arquivos = [(p, json.loads(p.read_text(encoding="utf-8"))) for p in sorted(JSON_DIR.glob("article_*.json"))]
 
     falta_tokens = force or any(not d["artigo_tokenizado"] for _, d in arquivos)
     falta_kw = force or any(not d.get("keywords") for _, d in arquivos)
@@ -220,18 +237,20 @@ def run(force: bool = False) -> int:
             dados["artigo_tokenizado_pontuado"] = tokenizar_pontuado(nlp[idioma], dados["artigo_completo"])
             mudou = True
         if not dados.get("keywords") or force:
-            dados["keywords"] = extrair_keywords(nlp, dados["titulo"], dados["resumo"])
+            dados["keywords"] = extrair_keywords(
+                nlp, dados["titulo"], dados["resumo"], idioma=idioma, corpo=dados["artigo_completo"]
+            )
             mudou = True
 
         if mudou:
-            arq.write_text(json.dumps(dados, ensure_ascii=False, indent=2) + "\n")
+            arq.write_text(json.dumps(dados, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         print(
             f"[{n}] {arq.stem} ({idioma}): {len(dados['artigo_tokenizado'])} tokens, "
             f"kw={dados['keywords']}",
             file=sys.stderr,
         )
 
-    META_FILE.write_text(json.dumps(metas, ensure_ascii=False, indent=2) + "\n")
+    META_FILE.write_text(json.dumps(metas, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print("idioma:", dict(Counter(d["idioma"] for d in por_ordem.values())), file=sys.stderr)
     return 0
 

@@ -13,13 +13,13 @@ dependencies = [
     "wordcloud",
     "matplotlib",
     "ipykernel",
-    "pt-core-news-sm",
-    "en-core-web-sm",
+    "pt-core-news-lg",
+    "en-core-web-lg",
 ]
 
 [tool.uv]
 package = false
 
 [tool.uv.sources]
-pt-core-news-sm = { url = "https://github.com/explosion/spacy-models/releases/download/pt_core_news_sm-3.8.0/pt_core_news_sm-3.8.0-py3-none-any.whl" }
-en-core-web-sm = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl" }
+pt-core-news-lg = { url = "https://github.com/explosion/spacy-models/releases/download/pt_core_news_lg-3.8.0/pt_core_news_lg-3.8.0-py3-none-any.whl" }
+en-core-web-lg = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.8.0/en_core_web_lg-3.8.0-py3-none-any.whl" }

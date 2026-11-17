@@ -262,9 +262,9 @@ def limpar(
 
 def run(force: bool = False) -> int:
     LIMPO_DIR.mkdir(parents=True, exist_ok=True)
-    titulos = {f"article_{r['ordem']:02d}": r["titulo"] for r in json.loads(META_FILE.read_text())}
+    titulos = {f"article_{r['ordem']:02d}": r["titulo"] for r in json.loads(META_FILE.read_text(encoding="utf-8"))}
     arquivos = sorted(TEXT_DIR.glob("article_*.md"))
-    textos = [a.read_text() for a in arquivos]
+    textos = [a.read_text(encoding="utf-8") for a in arquivos]
     lexico = montar_lexico(textos)
     vocab = montar_vocabulario([normalizar(t, lexico) for t in textos])
 
@@ -273,8 +273,8 @@ def run(force: bool = False) -> int:
         if destino.exists() and not force:
             print(f"[{n}] {arq.name} ja existia", file=sys.stderr)
             continue
-        limpo = limpar(arq.read_text(), titulos[arq.stem], lexico, vocab)
-        destino.write_text(limpo)
+        limpo = limpar(arq.read_text(encoding="utf-8"), titulos[arq.stem], lexico, vocab)
+        destino.write_text(limpo, encoding="utf-8")
         print(f"[{n}] {arq.name} -> limpo/{arq.name} ({len(limpo)} chars)", file=sys.stderr)
 
     return 0

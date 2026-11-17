@@ -169,15 +169,15 @@ def separar(md: str, meta: dict) -> dict:
 
 def run(force: bool = False) -> int:
     JSON_DIR.mkdir(parents=True, exist_ok=True)
-    metas = {f"article_{r['ordem']:02d}": r for r in json.loads(META_FILE.read_text())}
+    metas = {f"article_{r['ordem']:02d}": r for r in json.loads(META_FILE.read_text(encoding="utf-8"))}
 
     for n, arq in enumerate(sorted(LIMPO_DIR.glob("article_*.md")), 1):
         destino = JSON_DIR / f"{arq.stem}.json"
         if destino.exists() and not force:
             print(f"[{n}] {arq.name} ja existia", file=sys.stderr)
             continue
-        dados = separar(arq.read_text(), metas[arq.stem])
-        destino.write_text(json.dumps(dados, ensure_ascii=False, indent=2) + "\n")
+        dados = separar(arq.read_text(encoding="utf-8"), metas[arq.stem])
+        destino.write_text(json.dumps(dados, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         print(
             f"[{n}] {arq.name}: corpo={len(dados['artigo_completo'])} chars, "
             f"refs={len(dados['referencias'])}, kw={len(dados['keywords'])}",
