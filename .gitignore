@@ -12,6 +12,7 @@ __pycache__/
 # uv
 pratica-1-stil/.venv/
 pratica-2-ngramas/.venv/
+pratica-3-word2vec/.venv/
 pratica-4-bert/.venv/
 pratica-4-bert/modelos/
 pratica-4-bert/resultados/
